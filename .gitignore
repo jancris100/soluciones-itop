@@ -1,0 +1,5 @@
+# Instaladores y entorno local (binarios de PHP, MySQL e iTop, datos y credenciales): se recrean con la guía.
+descargas/
+entorno/
+itop/
+.playwright-mcp/

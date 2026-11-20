@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="KadsiBridge.Tests/KadsiBridge.Tests.csproj" />
+  <Project Path="KadsiBridge/KadsiBridge.csproj" />
+</Solution>

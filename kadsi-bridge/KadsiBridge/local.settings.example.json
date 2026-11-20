@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "DevOps__Organization": "SolucionesCoreForge",
+    "DevOps__Project": "KADSI-Pruebas",
+    "DevOps__Team": "KADSI-Pruebas Team",
+    "DevOps__WorkItemType": "Product Backlog Item",
+    "DevOps__AreaPath": "",
+    "DevOps__Tags": "KADSI",
+    "DevOps__ManagedIdentityClientId": "",
+    "DevOps__TenantId": "",
+    "DevOps__PersonalAccessToken": ""
+  }
+}
