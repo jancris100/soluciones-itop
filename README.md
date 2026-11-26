@@ -13,6 +13,7 @@ Trabajo sobre la mesa de servicio **iTop**:
 |---|---|
 | `extensiones/itop-devops/` | Extensión de iTop (etiquetas + envío a Azure DevOps) |
 | `devops-bridge/` | Azure Function .NET 10 con sus pruebas. Scripts: `validar-function-existente.ps1` y `configurar-function-existente.ps1` (el administrador ya creó la Function), `verificar-function.ps1` y `desplegar-function.ps1` (recursos existentes) y `desplegar.ps1` (todo desde cero) |
+| `devops-diario/` | Consola de Azure DevOps para el día a día: IDs de hoy y tareas del Daily y de los PBI en Committed (`dotnet run`) |
 | `entorno-plantillas/` | Configuración de MySQL, Apache y PHP de la réplica |
 | `docs/` | Plan de actualización, diseño de la integración con Azure DevOps y capturas de la instalación |
 
