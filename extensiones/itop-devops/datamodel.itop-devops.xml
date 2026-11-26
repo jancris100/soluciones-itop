@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.0">
+  <classes>
+    <!-- Campos nuevos en todos los tickets: etiquetas y el PBI de Azure DevOps creado para el ticket. -->
+    <class id="Ticket" _delta="must_exist">
+      <fields>
+        <field id="tags" xsi:type="AttributeTagSet" _delta="define">
+          <sql>tags</sql>
+          <is_null_allowed>true</is_null_allowed>
+          <tracking_level>all</tracking_level>
+          <max_items>12</max_items>
+        </field>
+        <field id="devops_id" xsi:type="AttributeString" _delta="define">
+          <sql>devops_id</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+          <tracking_level>all</tracking_level>
+        </field>
+        <field id="devops_url" xsi:type="AttributeURL" _delta="define">
+          <sql>devops_url</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+          <target>_blank</target>
+        </field>
+      </fields>
+    </class>
+
+    <!-- Incidente: "Etiquetas" bajo la descripción y el PBI en "Más información" (solo lectura). -->
+    <class id="Incident" _delta="must_exist">
+      <lifecycle>
+        <states>
+          <state id="new" _delta="must_exist">
+            <flags>
+              <attribute id="devops_id" _delta="define"><read_only/></attribute>
+              <attribute id="devops_url" _delta="define"><read_only/></attribute>
+            </flags>
+          </state>
+          <state id="escalated_tto" _delta="must_exist">
+            <flags>
+              <attribute id="devops_id" _delta="define"><read_only/></attribute>
+              <attribute id="devops_url" _delta="define"><read_only/></attribute>
+            </flags>
+          </state>
+          <state id="assigned" _delta="must_exist">
+            <flags>
+              <attribute id="devops_id" _delta="define"><read_only/></attribute>
+              <attribute id="devops_url" _delta="define"><read_only/></attribute>
+            </flags>
+          </state>
+          <state id="escalated_ttr" _delta="must_exist">
+            <flags>
+              <attribute id="devops_id" _delta="define"><read_only/></attribute>
+              <attribute id="devops_url" _delta="define"><read_only/></attribute>
+            </flags>
+          </state>
+          <state id="pending" _delta="must_exist">
+            <flags>
+              <attribute id="devops_id" _delta="define"><read_only/></attribute>
+              <attribute id="devops_url" _delta="define"><read_only/></attribute>
+            </flags>
+          </state>
+        </states>
+      </lifecycle>
+      <presentation>
+        <details>
+          <items>
+            <item id="col:col1">
+              <items>
+                <item id="fieldset:Ticket:baseinfo">
+                  <items>
+                    <item id="tags" _delta="define">
+                      <rank>65</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:moreinfo">
+                  <items>
+                    <item id="devops_id" _delta="define">
+                      <rank>100</rank>
+                    </item>
+                    <item id="devops_url" _delta="define">
+                      <rank>110</rank>
+                    </item>
+                  </items>
+                </item>
+              </items>
+            </item>
+          </items>
+        </details>
+        <list>
+          <items>
+            <item id="tags" _delta="define">
+              <rank>90</rank>
+            </item>
+          </items>
+        </list>
+        <search>
+          <items>
+            <item id="tags" _delta="define">
+              <rank>90</rank>
+            </item>
+          </items>
+        </search>
+      </presentation>
+    </class>
+  </classes>
+</itop_design>

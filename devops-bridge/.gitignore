@@ -1,0 +1,8 @@
+bin/
+obj/
+publish/
+publish.zip
+local.settings.json
+*.local.env
+para-administrador/
+empresa-*.ps1

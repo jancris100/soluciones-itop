@@ -1,0 +1,18 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "DevOps__Organization": "SolucionesCoreForge",
+    "DevOps__Project": "DevOps-Pruebas",
+    "DevOps__Team": "DevOps-Pruebas Team",
+    "DevOps__WorkItemType": "Product Backlog Item",
+    "DevOps__AreaPath": "",
+    "DevOps__Tags": "DEVOPS",
+    "DevOps__ManagedIdentityClientId": "",
+    "DevOps__TenantId": "",
+    "DevOps__ClientId": "",
+    "DevOps__PersonalAccessToken": ""
+  }
+}

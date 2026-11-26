@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ItopDevOpsBridge.Tests/ItopDevOpsBridge.Tests.csproj" />
+  <Project Path="ItopDevOpsBridge/ItopDevOpsBridge.csproj" />
+</Solution>

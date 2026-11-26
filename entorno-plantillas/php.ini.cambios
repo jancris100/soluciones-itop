@@ -1,0 +1,25 @@
+; Cambios sobre php.ini-production de PHP 8.2.26 (copiar php.ini-production a php.ini y aplicar estas líneas).
+max_execution_time = 300
+max_input_vars = 5000
+memory_limit = 512M
+post_max_size = 32M
+extension_dir = "{RAIZ}/entorno/php/ext"
+sys_temp_dir = "{RAIZ}/entorno/tmp"
+upload_tmp_dir = "{RAIZ}/entorno/tmp"
+upload_max_filesize = 20M
+extension=ldap
+extension=curl
+extension=fileinfo
+extension=gd
+extension=intl
+extension=mbstring
+extension=mysqli
+extension=openssl
+extension=pdo_mysql
+extension=soap
+extension=sodium
+extension=zip
+date.timezone = America/Costa_Rica
+session.save_path = "{RAIZ}/entorno/tmp/sessions"
+curl.cainfo = "{RAIZ}/entorno/php/extras/ssl/cacert.pem"
+openssl.cafile = "{RAIZ}/entorno/php/extras/ssl/cacert.pem"
