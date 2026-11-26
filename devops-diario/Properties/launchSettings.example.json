@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "devops-diario": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DEVOPS_DIARIO_TENANT_ID": "<tenant id de Microsoft Entra donde está Azure DevOps>",
+        "DEVOPS_DIARIO_PREFIJO_PBI": "<prefijo de sus PBI, por ejemplo HU>"
+      }
+    }
+  }
+}

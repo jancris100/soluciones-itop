@@ -2,17 +2,33 @@
 
 Consola para el día a día en Azure DevOps. Entra con su cuenta de Microsoft Entra ID; no usa PAT.
 
+## Variables (se definen una vez)
+
+| Variable | Qué es |
+|---|---|
+| `DEVOPS_DIARIO_TENANT_ID` | Tenant de Microsoft Entra donde está su Azure DevOps (*Organization settings › Microsoft Entra*). Obligatoria. |
+| `DEVOPS_DIARIO_PREFIJO_PBI` | Prefijo de los PBI que reciben tarea. Sin ella, `HU`. |
+| `DEVOPS_DIARIO_ORGANIZACION`, `_PROYECTO`, `_EQUIPO` | Opcionales: si están, no se preguntan. |
+
+Hay dos formas de definirlas; use una:
+- **Globales de Windows**: con `setx`, y después abra otra consola.
+  ```powershell
+  setx DEVOPS_DIARIO_TENANT_ID "<tenant id>"
+  setx DEVOPS_DIARIO_PREFIJO_PBI "<prefijo>"
+  ```
+- **`Properties\launchSettings.json`**: copie `Properties\launchSettings.example.json` con ese nombre y llene los valores.
+  - Es el archivo que lee `dotnet run`.
+  - No se sube a git, para que el tenant no quede en el repositorio.
+  - Si lo usa, sus valores mandan sobre las variables globales.
+
+## Uso
+
 ```powershell
 cd devops-diario
 dotnet run
 ```
 
-La primera vez:
-1. Pide el **tenant ID** (en Azure DevOps: *Organization settings › Microsoft Entra*).
-2. Abre el navegador para iniciar sesión.
-3. Le deja escoger organización, proyecto y equipo.
-
-Lo guarda en `%LOCALAPPDATA%\devops-diario\` (fuera del repositorio). La opción 3 del menú lo cambia.
+La primera vez abre el navegador para iniciar sesión y le deja escoger organización, proyecto y equipo. Lo guarda en `%LOCALAPPDATA%\devops-diario\`; la opción 3 del menú lo cambia.
 
 | Opción | Qué hace |
 |---|---|
@@ -26,9 +42,6 @@ La opción 2 crea, para cada fecha:
 
 No crea una tarea si el padre ya tiene una suya con esa fecha. "Ayer" es el día hábil anterior: un lunes, el viernes.
 
-**Ajustes en `Reglas.cs`:**
-- el **prefijo** de los PBI (marcado con `AQUÍ VA SU PREFIJO`);
-- el título del PBI Daily y el estado de los PBI;
-- el formato de los títulos y si solo toma los PBI asignados a usted.
+**Otros ajustes en `Reglas.cs`:** el título del PBI Daily, el estado de los PBI, el formato de los títulos y si solo toma los PBI asignados a usted.
 
 Sin navegador: `dotnet run -- --codigo` (código de dispositivo). Con la sesión de Azure CLI: `dotnet run -- --cli`.

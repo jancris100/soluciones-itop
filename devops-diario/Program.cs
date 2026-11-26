@@ -14,11 +14,19 @@ var config = Configuracion.Cargar();
 
 try
 {
-    while (!Guid.TryParse(config.TenantId, out _))
+    // El tenant (y, si se definen, organización, proyecto y equipo) vienen de variables de entorno: ver Reglas.cs.
+    config.TenantId = Reglas.TenantId;
+    if (!Guid.TryParse(config.TenantId, out _))
     {
-        config.TenantId = Preguntar("Tenant ID de Microsoft Entra donde está su Azure DevOps (Organization settings › Microsoft Entra)");
+        Error("Falta la variable DEVOPS_DIARIO_TENANT_ID con el tenant ID de Microsoft Entra donde está su Azure DevOps.");
+        Console.WriteLine("Defínala una vez (variable global de Windows) y abra otra consola:");
+        Console.WriteLine("  setx DEVOPS_DIARIO_TENANT_ID \"<tenant id>\"");
+        Console.WriteLine("o en Properties\\launchSettings.json (copie launchSettings.example.json).");
+        return 1;
     }
-    config.Guardar();
+    config.Organizacion = Reglas.Organizacion ?? config.Organizacion;
+    config.Proyecto = Reglas.Proyecto ?? config.Proyecto;
+    config.Equipo = Reglas.Equipo ?? config.Equipo;
 
     var devops = await AzureDevOps.ConectarAsync(config, args);
     if (string.IsNullOrEmpty(config.Organizacion) || string.IsNullOrEmpty(config.Proyecto) || string.IsNullOrEmpty(config.Equipo))
