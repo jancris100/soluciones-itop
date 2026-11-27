@@ -9,7 +9,7 @@ cd devops-diario
 .\instalar-ventana.ps1
 ```
 
-Crea `devops-diario.exe` en `%LOCALAPPDATA%\devops-diariopp` y el acceso directo **DevOps diario** en el escritorio.
+Crea `devops-diario.exe` en `%LOCALAPPDATA%\devops-diario\app` y el acceso directo **DevOps diario** en el escritorio.
 Después de un `git pull`, córralo otra vez para actualizarla.
 
 - **Crear tareas:** escoge la fecha (o Ayer / Hoy) y muestra el Daily y sus PBI en Committed.
