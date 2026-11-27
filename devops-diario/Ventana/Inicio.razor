@@ -1,0 +1,428 @@
+@inject Sesion Sesion
+@inject IJSRuntime JS
+
+<header class="barra">
+    <strong>DevOps diario</strong>
+    @if (devops is not null && Sesion.Listo)
+    {
+        <span class="tenue">@Sesion.Config.Organizacion / @Sesion.Config.Proyecto / @Sesion.Config.Equipo · @devops.MiNombre</span>
+        <button class="enlace" @onclick="CambiarEquipo">Cambiar</button>
+    }
+    <nav>
+        <button class="@(pestana == 1 ? "activa" : null)" @onclick="() => IrA(1)">Crear tareas</button>
+        <button class="@(pestana == 2 ? "activa" : null)" @onclick="() => IrA(2)">Mis IDs</button>
+    </nav>
+</header>
+
+<main>
+    @if (error is not null)
+    {
+        <p class="aviso error">@error</p>
+    }
+    @if (mensaje is not null)
+    {
+        <p class="aviso ok">@mensaje</p>
+    }
+
+    @if (devops is null)
+    {
+        <p class="tenue">@(error is null ? "Iniciando sesión con Microsoft… (la primera vez se abre el navegador)" : string.Empty)</p>
+    }
+    else if (!Sesion.Listo)
+    {
+        <section class="tarjeta elegir">
+            <h2>¿Dónde trabaja?</h2>
+            <label>Organización
+                <select @bind="Sesion.Config.Organizacion" @bind:after="CargarProyectosAsync">
+                    <option value=""></option>
+                    @foreach (var o in organizaciones) { <option>@o</option> }
+                </select>
+            </label>
+            <label>Proyecto
+                <select @bind="Sesion.Config.Proyecto" @bind:after="CargarEquiposAsync" disabled="@(proyectos.Count == 0)">
+                    <option value=""></option>
+                    @foreach (var p in proyectos) { <option>@p</option> }
+                </select>
+            </label>
+            <label>Equipo
+                <select @bind="Sesion.Config.Equipo" disabled="@(equipos.Count == 0)">
+                    <option value=""></option>
+                    @foreach (var e in equipos) { <option>@e</option> }
+                </select>
+            </label>
+            <button class="primario" disabled="@(!Sesion.Listo)" @onclick="GuardarEquipoAsync">Continuar</button>
+        </section>
+    }
+    else if (pestana == 1)
+    {
+        <section class="fila-fecha">
+            <label>Fecha <input type="date" @bind="fecha" @bind:after="CargarAsync" /></label>
+            <button @onclick="() => IrAFecha(DiaHabilAnterior(DateTime.Today))">Ayer</button>
+            <button @onclick="() => IrAFecha(DateTime.Today)">Hoy</button>
+            @if (sprint is not null) { <span class="tenue">Sprint: @sprint.Nombre</span> }
+            @if (campo is not null) { <span class="tenue">Horas en: @campo.Value.Nombre</span> }
+        </section>
+
+        @if (ocupado)
+        {
+            <p class="tenue">Cargando…</p>
+        }
+        else
+        {
+            <table class="tareas">
+                <thead>
+                    <tr><th></th><th>PBI</th><th>Prefijo</th><th>Horas</th><th>Así queda la tarea</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in filas)
+                    {
+                        <tr class="@(f.Existente is not null ? "existe" : f.Crear ? null : "apagada")">
+                            <td>
+                                @if (f.Existente is null)
+                                {
+                                    <input type="checkbox" @bind="f.Crear" @bind:after="Repartir" />
+                                }
+                            </td>
+                            <td><span class="id">@f.Padre.Id</span> @f.Padre.Titulo</td>
+                            <td>
+                                @if (!f.EsDaily && f.Existente is null)
+                                {
+                                    <input class="prefijo" @bind="f.Prefijo" @bind:event="oninput" />
+                                }
+                            </td>
+                            <td>
+                                @if (f.Existente is null && campo is not null)
+                                {
+                                    <input class="horas" type="number" step="0.25" min="0" @bind="f.Horas" @bind:event="oninput" disabled="@(!f.Crear)" />
+                                }
+                            </td>
+                            <td>
+                                @if (f.Existente is not null)
+                                {
+                                    <span class="tenue">Ya existe: <span class="id">@f.Existente.Id</span> @f.Existente.Titulo</span>
+                                }
+                                else
+                                {
+                                    @TituloDe(f)
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (filas.Count == 0)
+                    {
+                        <tr><td colspan="5" class="tenue">No hay Daily ni PBI en @Reglas.EstadoPbi en este sprint. Cree uno abajo.</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <section class="pie">
+                <div class="nuevo">
+                    <input placeholder="Título del PBI nuevo" @bind="tituloPbiNuevo" @bind:event="oninput" @onkeydown="TeclaPbiAsync" />
+                    <button disabled="@(string.IsNullOrWhiteSpace(tituloPbiNuevo) || creandoPbi)" @onclick="CrearPbiAsync">Crear PBI</button>
+                    <span class="tenue">Se crea en @Reglas.EstadoPbi, en este sprint y asignado a usted.</span>
+                </div>
+                <div class="total">
+                    @if (campo is not null)
+                    {
+                        <span class="@(TotalHoras == Reglas.HorasDia ? "cuadra" : "falta")">
+                            @Horas(TotalHoras) de @Horas(Reglas.HorasDia) h
+                            @if (TotalHoras != Reglas.HorasDia) { <small>(no es obligatorio)</small> }
+                        </span>
+                        <button @onclick="Repartir">Repartir @Horas(Reglas.HorasDia)</button>
+                    }
+                    <button class="primario" disabled="@(PorCrear.Count == 0 || creando)" @onclick="CrearTareasAsync">
+                        @(creando ? "Creando…" : $"Crear {PorCrear.Count} tarea(s)")
+                    </button>
+                </div>
+            </section>
+        }
+    }
+    else
+    {
+        <section class="fila-fecha">
+            <label>Fecha <input type="date" @bind="fechaIds" @bind:after="CargarIdsAsync" /></label>
+            <button @onclick="CargarIdsAsync">Actualizar</button>
+            @if (ids.Count > 0)
+            {
+                <button class="primario" @onclick="CopiarIdsAsync">Copiar @ids.Count ID(s)</button>
+            }
+        </section>
+        <table class="tareas">
+            <tbody>
+                @foreach (var e in ids)
+                {
+                    <tr><td><span class="id">@e.Id</span></td><td>@e.Tipo</td><td>@e.Estado</td><td>@e.Titulo</td></tr>
+                }
+                @if (ids.Count == 0 && !ocupado)
+                {
+                    <tr><td class="tenue">No tiene IDs con la fecha @Texto(fechaIds).</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</main>
+
+@code {
+    private sealed class Fila(Elemento padre, bool esDaily, Elemento? existente, string prefijo)
+    {
+        public Elemento Padre { get; } = padre;
+        public bool EsDaily { get; } = esDaily;
+        public Elemento? Existente { get; set; } = existente;
+        public bool Crear { get; set; } = existente is null;
+        public string Prefijo { get; set; } = prefijo;
+        public decimal Horas { get; set; }
+    }
+
+    private AzureDevOps? devops;
+    private int pestana = 1;
+    private string? error;
+    private string? mensaje;
+    private bool ocupado;
+    private bool creando;
+    private bool creandoPbi;
+
+    private List<string> organizaciones = [];
+    private List<string> proyectos = [];
+    private List<string> equipos = [];
+
+    private DateTime fecha = DateTime.Today;
+    private DateTime fechaIds = DateTime.Today;
+    private Sprint? sprint;
+    private (string Campo, string Nombre)? campo;
+    private List<Fila> filas = [];
+    private string tituloPbiNuevo = string.Empty;
+    private List<Elemento> ids = [];
+
+    private List<Fila> PorCrear => filas.Where(f => f.Crear && f.Existente is null).ToList();
+    private decimal TotalHoras => PorCrear.Sum(f => f.Horas);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Intentar(async () =>
+        {
+            await Sesion.ConectarAsync();
+            devops = Sesion.DevOps;
+            if (Sesion.Listo)
+            {
+                await CargarAsync();
+            }
+            else
+            {
+                organizaciones = await devops!.OrganizacionesAsync();
+            }
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------- organización
+
+    private async Task CambiarEquipo()
+    {
+        Sesion.Config.Organizacion = Sesion.Config.Proyecto = Sesion.Config.Equipo = string.Empty;
+        proyectos = [];
+        equipos = [];
+        await Intentar(async () => organizaciones = await devops!.OrganizacionesAsync());
+    }
+
+    private async Task CargarProyectosAsync()
+    {
+        Sesion.Config.Proyecto = Sesion.Config.Equipo = string.Empty;
+        equipos = [];
+        await Intentar(async () => proyectos = await devops!.ProyectosAsync());
+    }
+
+    private async Task CargarEquiposAsync()
+    {
+        Sesion.Config.Equipo = string.Empty;
+        await Intentar(async () => equipos = await devops!.EquiposAsync());
+    }
+
+    private async Task GuardarEquipoAsync()
+    {
+        Sesion.Config.Guardar();
+        await Intentar(async () =>
+        {
+            await devops!.CargarUsuarioAsync();
+            campo = null;
+            await CargarAsync();
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------- crear tareas
+
+    private async Task IrAFecha(DateTime dia)
+    {
+        fecha = dia;
+        await CargarAsync();
+    }
+
+    private async Task IrA(int numero)
+    {
+        pestana = numero;
+        if (numero == 2 && ids.Count == 0)
+        {
+            await CargarIdsAsync();
+        }
+    }
+
+    /// <summary>Daily y PBI en Committed del sprint, con lo que ya existe para la fecha y las horas repartidas.</summary>
+    private async Task CargarAsync()
+    {
+        ocupado = true;
+        await Intentar(async () =>
+        {
+            campo ??= await devops!.CampoHorasAsync(Reglas.CampoHoras);
+            sprint = await devops!.SprintActualAsync()
+                ?? throw new InvalidOperationException("El equipo no tiene un sprint vigente hoy.");
+            var enSprint = $"[System.TeamProject] = @project AND [System.IterationPath] = '{AzureDevOps.Wiql(sprint.Ruta)}' AND [System.State] <> 'Removed'";
+
+            var nuevas = new List<Fila>();
+            var daily = (await devops.ElementosAsync(await devops.ConsultarAsync(
+                $"SELECT [System.Id] FROM WorkItems WHERE {enSprint} AND [System.Title] = '{AzureDevOps.Wiql(Reglas.TituloPbiDaily)}' " +
+                "AND [System.WorkItemType] <> 'Task' ORDER BY [System.Id]"))).FirstOrDefault();
+            if (daily is not null)
+            {
+                nuevas.Add(new Fila(daily, true, await ExistenteAsync(daily), string.Empty));
+            }
+            var pbis = await devops.ElementosAsync(await devops.ConsultarAsync(
+                $"SELECT [System.Id] FROM WorkItems WHERE {enSprint} AND [System.WorkItemType] IN GROUP 'Microsoft.RequirementCategory' " +
+                $"AND [System.State] = '{AzureDevOps.Wiql(Reglas.EstadoPbi)}' AND [System.Title] <> '{AzureDevOps.Wiql(Reglas.TituloPbiDaily)}'" +
+                (Reglas.SoloPbiAsignadosAMi ? " AND [System.AssignedTo] = @Me" : string.Empty) + " ORDER BY [System.Id]"));
+            foreach (var pbi in pbis)
+            {
+                nuevas.Add(new Fila(pbi, false, await ExistenteAsync(pbi), PrefijoDe(pbi.Id)));
+            }
+            filas = nuevas;
+            Repartir();
+        });
+        ocupado = false;
+    }
+
+    private async Task<Elemento?> ExistenteAsync(Elemento padre)
+    {
+        var texto = Texto(fecha);
+        return (await devops!.HijosAsync(padre.Id)).FirstOrDefault(h => h.Titulo.Contains(texto, StringComparison.Ordinal)
+            && string.Equals(h.AsignadoA, devops.MiCuenta, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string PrefijoDe(int idPbi) => Sesion.Config.Prefijos.TryGetValue(idPbi, out var p) ? p : Reglas.PrefijoEditable;
+
+    private string TituloDe(Fila f) => f.EsDaily
+        ? Reglas.TituloTareaDaily(Texto(fecha))
+        : Reglas.TituloConPrefijo(Texto(fecha), f.Prefijo, f.Padre.Titulo);
+
+    /// <summary>
+    /// Daily 0,25 y el resto de 7,50 en partes iguales (cuartos de hora; el sobrante a la primera) entre las tareas de
+    /// PBI marcadas. Si el día ya tenía tareas, solo reparte lo que falta suponiendo que esas no tienen horas: ajústelo.
+    /// </summary>
+    private void Repartir()
+    {
+        var crear = PorCrear;
+        var daily = crear.Where(f => f.EsDaily).ToList();
+        var pbis = crear.Where(f => !f.EsDaily).ToList();
+        daily.ForEach(f => f.Horas = Reglas.HorasDaily);
+        filas.Where(f => !f.Crear).ToList().ForEach(f => f.Horas = 0);
+        if (pbis.Count == 0)
+        {
+            return;
+        }
+        var disponible = Reglas.HorasDia - Reglas.HorasDaily;
+        var parte = Math.Floor(disponible / pbis.Count / Reglas.BloqueHoras) * Reglas.BloqueHoras;
+        pbis.ForEach(f => f.Horas = parte);
+        pbis[0].Horas += disponible - parte * pbis.Count;
+    }
+
+    private async Task TeclaPbiAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(tituloPbiNuevo))
+        {
+            await CrearPbiAsync();
+        }
+    }
+
+    private async Task CrearPbiAsync()
+    {
+        creandoPbi = true;
+        await Intentar(async () =>
+        {
+            var pbi = await devops!.CrearPbiAsync(tituloPbiNuevo.Trim(), sprint!, Reglas.EstadoPbi);
+            filas.Add(new Fila(pbi, false, null, Reglas.PrefijoEditable));
+            tituloPbiNuevo = string.Empty;
+            Repartir();
+            mensaje = $"PBI {pbi.Id} creado. Ya está en la lista para crearle su tarea.";
+        });
+        creandoPbi = false;
+    }
+
+    private async Task CrearTareasAsync()
+    {
+        creando = true;
+        await Intentar(async () =>
+        {
+            var creados = new List<int>();
+            foreach (var f in PorCrear)
+            {
+                creados.Add(await devops!.CrearTareaAsync(f.Padre, TituloDe(f), f.Horas, campo?.Campo));
+                if (!f.EsDaily)
+                {
+                    Sesion.Config.Prefijos[f.Padre.Id] = f.Prefijo.Trim();
+                }
+            }
+            Sesion.Config.Guardar();
+            await CargarAsync();
+            mensaje = $"Creadas {creados.Count}: {string.Join(", ", creados)}";
+            ids = [];
+        });
+        creando = false;
+    }
+
+    // ------------------------------------------------------------------------------------------- mis IDs
+
+    private async Task CargarIdsAsync()
+    {
+        ocupado = true;
+        await Intentar(async () =>
+        {
+            ids = await devops!.ElementosAsync(await devops.ConsultarAsync(
+                "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.AssignedTo] = @Me " +
+                $"AND [System.Title] CONTAINS '{AzureDevOps.Wiql(Texto(fechaIds))}' AND [System.State] <> 'Removed' ORDER BY [System.Id]"));
+        });
+        ocupado = false;
+    }
+
+    private async Task CopiarIdsAsync()
+    {
+        await JS.InvokeVoidAsync("copiar", string.Join(", ", ids.Select(e => e.Id)));
+        mensaje = $"Copiados {ids.Count} ID(s).";
+    }
+
+    // ------------------------------------------------------------------------------------------- utilidades
+
+    private async Task Intentar(Func<Task> accion)
+    {
+        error = null;
+        mensaje = null;
+        try
+        {
+            await accion();
+        }
+        catch (Exception e) when (e is InvalidOperationException or HttpRequestException or Azure.Identity.AuthenticationFailedException)
+        {
+            error = e.Message;
+        }
+    }
+
+    private static string Texto(DateTime dia) => dia.ToString(Reglas.FormatoFecha, CultureInfo.InvariantCulture);
+
+    private static string Horas(decimal horas) => horas.ToString("0.00", CultureInfo.GetCultureInfo("es-CR"));
+
+    /// <summary>"Ayer" es el día hábil anterior: un lunes, el viernes.</summary>
+    private static DateTime DiaHabilAnterior(DateTime dia)
+    {
+        var anterior = dia.AddDays(-1);
+        while (anterior.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        {
+            anterior = anterior.AddDays(-1);
+        }
+        return anterior;
+    }
+}

@@ -1,6 +1,25 @@
 # devops-diario
 
-Consola para el día a día en Azure DevOps. Entra con su cuenta de Microsoft Entra ID; no usa PAT.
+Ventana (y consola) para el día a día en Azure DevOps. Entra con su cuenta de Microsoft Entra ID; no usa PAT.
+
+## Ventana (recomendada)
+
+```powershell
+cd devops-diario
+.\instalar-ventana.ps1
+```
+
+Crea `devops-diario.exe` en `%LOCALAPPDATA%\devops-diariopp` y el acceso directo **DevOps diario** en el escritorio.
+Después de un `git pull`, córralo otra vez para actualizarla.
+
+- **Crear tareas:** escoge la fecha (o Ayer / Hoy) y muestra el Daily y sus PBI en Committed.
+  - Cada tarea es fecha + prefijo + título del PBI. El prefijo se edita en cada fila y la ventana recuerda el último por PBI.
+  - Las horas se reparten solas (Daily 0,25 y el resto de 7,50) y se pueden cambiar; el total de 7,50 es una guía, no obligatorio.
+  - Si falta un PBI, se crea ahí mismo (en Committed, en el sprint y asignado a usted) y queda en la lista.
+  - Lo que ya existe para esa fecha aparece en gris y no se vuelve a crear.
+- **Mis IDs:** los work items con la fecha en el título y un botón para copiar los IDs.
+
+## Consola
 
 ## Variables (se definen una vez)
 

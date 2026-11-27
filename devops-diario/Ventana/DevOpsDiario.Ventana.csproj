@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DevOpsDiario</RootNamespace>
+    <AssemblyName>devops-diario</AssemblyName>
+    <!-- WebView2 trae una referencia WPF (WindowsBase 5) que choca con la de .NET; no afecta a WinForms. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+
+  <!-- Lo mismo que usa la consola. -->
+  <ItemGroup>
+    <Compile Include="..\AzureDevOps.cs" Link="Compartido\AzureDevOps.cs" />
+    <Compile Include="..\Reglas.cs" Link="Compartido\Reglas.cs" />
+    <Compile Include="..\Configuracion.cs" Link="Compartido\Configuracion.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.WindowsForms" Version="10.0.120" />
+  </ItemGroup>
+
+</Project>

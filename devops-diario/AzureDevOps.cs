@@ -219,6 +219,31 @@ public sealed class AzureDevOps
         return datos!["id"]!.GetValue<int>();
     }
 
+    /// <summary>
+    /// Crea un PBI (el tipo de requerimiento del proceso: Product Backlog Item, User Story…) en el sprint, en el área por
+    /// defecto del equipo, asignado al usuario y en el estado indicado. Devuelve el PBI creado.
+    /// </summary>
+    public async Task<Elemento> CrearPbiAsync(string titulo, Sprint sprint, string estado)
+    {
+        var categoria = await GetAsync($"{Proy}/_apis/wit/workitemtypecategories/Microsoft.RequirementCategory?{Api}");
+        var tipo = categoria?["defaultWorkItemType"]?["name"]?.GetValue<string>()
+            ?? throw new InvalidOperationException("No encontré el tipo de PBI del proceso.");
+        var area = (await GetAsync($"{Proy}/{Uri.EscapeDataString(config.Equipo)}/_apis/work/teamsettings/teamfieldvalues?{Api}"))
+            ?["defaultValue"]?.GetValue<string>() ?? config.Proyecto;
+        var parche = new JsonArray
+        {
+            Campo("System.Title", titulo),
+            Campo("System.AssignedTo", MiCuenta),
+            Campo("System.IterationPath", sprint.Ruta),
+            Campo("System.AreaPath", area),
+            Campo("System.State", estado),
+        };
+        var datos = await EnviarAsync(HttpMethod.Post, $"{Proy}/_apis/wit/workitems/${Uri.EscapeDataString(tipo)}?{Api}",
+            parche.ToJsonString(), "application/json-patch+json");
+        var id = datos!["id"]!.GetValue<int>();
+        return (await ElementosAsync([id])).Single();
+    }
+
     /// <summary>Texto seguro dentro de una consulta WIQL.</summary>
     public static string Wiql(string texto) => texto.Replace("'", "''");
 

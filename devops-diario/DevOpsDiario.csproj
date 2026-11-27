@@ -8,6 +8,13 @@
     <RootNamespace>DevOpsDiario</RootNamespace>
   </PropertyGroup>
 
+  <!-- La ventana (Ventana/) es otro proyecto: comparte AzureDevOps.cs, Reglas.cs y Configuracion.cs. -->
+  <ItemGroup>
+    <Compile Remove="Ventana/**" />
+    <Content Remove="Ventana/**" />
+    <None Remove="Ventana/**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
   </ItemGroup>

@@ -15,6 +15,9 @@ public sealed class Configuracion
     public string Proyecto { get; set; } = string.Empty;
     public string Equipo { get; set; } = string.Empty;
 
+    /// <summary>Último prefijo que usó la ventana en cada PBI (por id), para proponerlo la próxima vez.</summary>
+    public Dictionary<int, string> Prefijos { get; set; } = [];
+
     public static string Carpeta { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "devops-diario");
 

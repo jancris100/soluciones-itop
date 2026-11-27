@@ -59,6 +59,18 @@ public static class Reglas
     /// <summary>Título de la tarea en el PBI Daily.</summary>
     public static string TituloTareaDaily(string fecha) => $"{fecha} Daily";
 
+    /// <summary>
+    /// En la ventana el título es fecha + prefijo + título del PBI, con el prefijo editable. Este es el que propone:
+    /// lo que hay en FormatoTareaPbi entre la fecha y el PBI (sin variables, "HU… Se trabaja en").
+    /// </summary>
+    public static string PrefijoEditable =>
+        string.Join(' ', FormatoTareaPbi.Replace("{fecha}", " ").Replace("{pbi}", " ").Replace("{prefijo}", Prefijo)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>Título de una tarea armado en la ventana: fecha + prefijo + título del PBI.</summary>
+    public static string TituloConPrefijo(string fecha, string prefijo, string tituloPbi) =>
+        string.Join(' ', $"{fecha} {prefijo} {tituloPbi}".Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
     /// <summary>Título de la tarea en un PBI en Committed, según FormatoTareaPbi (sin espacios dobles si no hay prefijo).</summary>
     public static string TituloTareaPbi(string fecha, string tituloPbi) =>
         string.Join(' ', FormatoTareaPbi.Replace("{fecha}", fecha).Replace("{prefijo}", Prefijo).Replace("{pbi}", tituloPbi.Trim())

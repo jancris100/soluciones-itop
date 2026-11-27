@@ -1,0 +1,77 @@
+:root {
+  --fondo: #f4f6f9;
+  --tarjeta: #ffffff;
+  --texto: #1b2430;
+  --tenue: #5d6b7c;
+  --borde: #d9dfe7;
+  --acento: #0a66c2;
+  --acento-texto: #ffffff;
+  --bien: #1a7f37;
+  --mal: #b42318;
+  --alerta: #9a6700;
+  --fila-existe: #eef2f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181e;
+    --tarjeta: #1c222a;
+    --texto: #e6ebf1;
+    --tenue: #9aa7b6;
+    --borde: #2e3743;
+    --acento: #4c9be8;
+    --acento-texto: #0b1220;
+    --bien: #4ac26b;
+    --mal: #f47067;
+    --alerta: #d4a72c;
+    --fila-existe: #222a33;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+
+.barra { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: var(--tarjeta); border-bottom: 1px solid var(--borde); }
+.barra nav { margin-left: auto; display: flex; gap: 4px; }
+.barra nav button { border: 0; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--tenue); }
+.barra nav button.activa { background: var(--fondo); color: var(--texto); font-weight: 600; }
+
+main { padding: 16px 18px; }
+.tenue { color: var(--tenue); }
+.aviso { padding: 8px 12px; border-radius: 6px; margin: 0 0 12px; }
+.aviso.error { background: color-mix(in srgb, var(--mal) 14%, transparent); color: var(--mal); }
+.aviso.ok { background: color-mix(in srgb, var(--bien) 14%, transparent); color: var(--bien); }
+
+button { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button.primario { background: var(--acento); border-color: var(--acento); color: var(--acento-texto); font-weight: 600; }
+button.enlace { border: 0; background: none; color: var(--acento); padding: 0; }
+input, select { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 6px; padding: 5px 8px; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+
+.tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 8px; padding: 16px; }
+.elegir { max-width: 420px; display: grid; gap: 12px; }
+.elegir h2 { margin: 0; font-size: 16px; }
+.elegir label { display: grid; gap: 4px; }
+
+.fila-fecha { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.fila-fecha .tenue { margin-left: 8px; }
+
+.tareas { width: 100%; border-collapse: collapse; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; }
+.tareas th { text-align: left; font-weight: 600; color: var(--tenue); padding: 8px 10px; border-bottom: 1px solid var(--borde); }
+.tareas td { padding: 7px 10px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+.tareas tr:last-child td { border-bottom: 0; }
+.tareas tr.existe { background: var(--fila-existe); }
+.tareas tr.apagada td:not(:first-child) { opacity: .45; }
+.id { font-variant-numeric: tabular-nums; color: var(--tenue); margin-right: 4px; }
+.prefijo { width: 100%; min-width: 160px; }
+.horas { width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.pie { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.nuevo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nuevo input { width: 320px; }
+.total { display: flex; align-items: center; gap: 10px; }
+.total span { font-variant-numeric: tabular-nums; font-weight: 600; }
+.total .cuadra { color: var(--bien); }
+.total .falta { color: var(--alerta); }
+.total small { font-weight: 400; color: var(--tenue); }
