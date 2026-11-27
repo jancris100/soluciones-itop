@@ -171,8 +171,33 @@ public sealed class AzureDevOps
         return ids.Count == 0 ? [] : await ElementosAsync(ids);
     }
 
-    /// <summary>Crea una tarea hija del work item, asignada al usuario, en el mismo sprint y área que el padre.</summary>
-    public async Task<int> CrearTareaAsync(Elemento padre, string titulo)
+    /// <summary>
+    /// Campo donde van las horas de una tarea: el de la variable DEVOPS_DIARIO_CAMPO_HORAS o, si no está, el primero que
+    /// tenga el tipo Task de este proceso entre Completed Work (Agile, CMMI) y Remaining Work (Scrum). Null: ninguno.
+    /// </summary>
+    public async Task<(string Campo, string Nombre)?> CampoHorasAsync(string? preferido)
+    {
+        var campos = (await GetAsync($"{Proy}/_apis/wit/workitemtypes/Task/fields?{Api}"))?["value"]?.AsArray() ?? [];
+        var disponibles = campos.Where(c => c is not null)
+            .ToDictionary(c => c!["referenceName"]!.GetValue<string>(), c => c!["name"]!.GetValue<string>(), StringComparer.OrdinalIgnoreCase);
+        string[] candidatos = preferido is null
+            ? ["Microsoft.VSTS.Scheduling.CompletedWork", "Microsoft.VSTS.Scheduling.RemainingWork"]
+            : [preferido];
+        foreach (var campo in candidatos)
+        {
+            if (disponibles.TryGetValue(campo, out var nombre))
+            {
+                return (campo, nombre);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Crea una tarea hija del work item, asignada al usuario, en el mismo sprint y área que el padre, con sus horas en
+    /// el campo indicado (sin campo, sin horas).
+    /// </summary>
+    public async Task<int> CrearTareaAsync(Elemento padre, string titulo, decimal horas, string? campoHoras)
     {
         var parche = new JsonArray
         {
@@ -186,6 +211,10 @@ public sealed class AzureDevOps
                 ["value"] = new JsonObject { ["rel"] = "System.LinkTypes.Hierarchy-Reverse", ["url"] = $"{Org}/_apis/wit/workItems/{padre.Id}" },
             },
         };
+        if (campoHoras is not null && horas > 0)
+        {
+            parche.Add(new JsonObject { ["op"] = "add", ["path"] = $"/fields/{campoHoras}", ["value"] = horas });
+        }
         var datos = await EnviarAsync(HttpMethod.Post, $"{Proy}/_apis/wit/workitems/$Task?{Api}", parche.ToJsonString(), "application/json-patch+json");
         return datos!["id"]!.GetValue<int>();
     }

@@ -10,10 +10,34 @@ public static class Reglas
     public static string TenantId => Variable("DEVOPS_DIARIO_TENANT_ID") ?? string.Empty;
 
     /// <summary>
-    /// Solo los PBI cuyo título empieza con este texto reciben su tarea "Se trabaja en …"; los demás se muestran como
-    /// omitidos. Variable: DEVOPS_DIARIO_PREFIJO_PBI (sin ella, "HU"). No distingue mayúsculas de minúsculas.
+    /// Prefijo que llevan las tareas de los PBI en Committed (no los PBI: a todos se les crea su tarea).
+    /// Variable: DEVOPS_DIARIO_PREFIJO (también se acepta el nombre viejo DEVOPS_DIARIO_PREFIJO_PBI).
     /// </summary>
-    public static string PrefijoPbi => Variable("DEVOPS_DIARIO_PREFIJO_PBI") ?? "HU";
+    public static string Prefijo => Variable("DEVOPS_DIARIO_PREFIJO") ?? Variable("DEVOPS_DIARIO_PREFIJO_PBI") ?? string.Empty;
+
+    /// <summary>
+    /// Título de la tarea de un PBI en Committed, con {fecha}, {prefijo} y {pbi} (el título del PBI).
+    /// Variable: DEVOPS_DIARIO_FORMATO_TAREA. Sin ella: "{fecha} {prefijo} Se trabaja en {pbi}".
+    /// </summary>
+    public static string FormatoTareaPbi => Variable("DEVOPS_DIARIO_FORMATO_TAREA") ?? "{fecha} {prefijo} Se trabaja en {pbi}";
+
+    /// <summary>
+    /// Campo de horas de las tareas (nombre de referencia). Variable: DEVOPS_DIARIO_CAMPO_HORAS. Sin ella se usa el
+    /// que tenga el proceso: Completed Work o, si no existe (Scrum), Remaining Work.
+    /// </summary>
+    public static string? CampoHoras => Variable("DEVOPS_DIARIO_CAMPO_HORAS");
+
+    /// <summary>Horas de un día: la tarea del Daily más las de los PBI suman esto.</summary>
+    public const decimal HorasDia = 7.50m;
+
+    /// <summary>Horas de la tarea del Daily.</summary>
+    public const decimal HorasDaily = 0.25m;
+
+    /// <summary>Con hasta este número de tareas de PBI en un día, las horas se reparten solas; con más, se preguntan.</summary>
+    public const int RepartoAutomaticoHasta = 2;
+
+    /// <summary>Las horas que se reparten solas se redondean a este bloque (un cuarto de hora).</summary>
+    public const decimal BloqueHoras = 0.25m;
 
     /// <summary>Opcionales: si se definen, no se pregunta organización, proyecto ni equipo.</summary>
     public static string? Organizacion => Variable("DEVOPS_DIARIO_ORGANIZACION");
@@ -35,11 +59,10 @@ public static class Reglas
     /// <summary>Título de la tarea en el PBI Daily.</summary>
     public static string TituloTareaDaily(string fecha) => $"{fecha} Daily";
 
-    /// <summary>Título de la tarea en un PBI con el prefijo: la fecha, "Se trabaja en" y el título del PBI.</summary>
-    public static string TituloTareaPbi(string fecha, string tituloPbi) => $"{fecha} Se trabaja en {tituloPbi}";
-
-    /// <summary>El PBI tiene el formato que recibe tarea.</summary>
-    public static bool TieneFormato(string tituloPbi) => tituloPbi.TrimStart().StartsWith(PrefijoPbi, StringComparison.OrdinalIgnoreCase);
+    /// <summary>Título de la tarea en un PBI en Committed, según FormatoTareaPbi (sin espacios dobles si no hay prefijo).</summary>
+    public static string TituloTareaPbi(string fecha, string tituloPbi) =>
+        string.Join(' ', FormatoTareaPbi.Replace("{fecha}", fecha).Replace("{prefijo}", Prefijo).Replace("{pbi}", tituloPbi.Trim())
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     /// <summary>Valor de la variable, o null si no está o está vacía.</summary>
     private static string? Variable(string nombre) =>

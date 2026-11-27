@@ -4,7 +4,7 @@ using DevOpsDiario;
 // Consola de Azure DevOps para el día a día:
 //   1. Mis IDs de hoy: work items asignados a usted con la fecha de hoy en el título.
 //   2. Crear IDs del día: su tarea en el PBI "Daily" y una tarea por cada PBI en Committed (ayer, hoy o ambos),
-//      sin duplicar, mostrando todo antes de crear.
+//      sin duplicar, con las horas del día repartidas (7,50: Daily 0,25 y el resto en los PBI), mostrando todo antes de crear.
 // Uso: dotnet run            (inicia sesión con Microsoft en el navegador)
 //      dotnet run -- --codigo (sin navegador: código de dispositivo)
 //      dotnet run -- --cli    (usa la sesión de "az login")
@@ -125,7 +125,7 @@ static async Task CrearIdsAsync(AzureDevOps devops)
     Console.WriteLine($"Sprint: {sprint.Nombre}");
     var enSprint = $"[System.TeamProject] = @project AND [System.IterationPath] = '{AzureDevOps.Wiql(sprint.Ruta)}' AND [System.State] <> 'Removed'";
 
-    var aCrear = new List<(DateTime Fecha, Elemento Padre, string Titulo)>();
+    var aCrear = new List<Tarea>();
     var yaExisten = new List<string>();
 
     // Daily: una tarea suya por día dentro del PBI "Daily" del sprint.
@@ -138,41 +138,63 @@ static async Task CrearIdsAsync(AzureDevOps devops)
     }
     else
     {
-        Planear(devops, daily, await devops.HijosAsync(daily.Id), fechas, Reglas.TituloTareaDaily, aCrear, yaExisten);
+        Planear(devops, daily, await devops.HijosAsync(daily.Id), fechas, Reglas.TituloTareaDaily, true, aCrear, yaExisten);
     }
 
-    // PBI en Committed: una tarea por día en los que tienen el formato; los demás se muestran como omitidos.
+    // PBI en Committed: a cada uno, una tarea por día con el formato de Reglas.TituloTareaPbi.
     var pbis = await devops.ElementosAsync(await devops.ConsultarAsync(
         $"SELECT [System.Id] FROM WorkItems WHERE {enSprint} AND [System.WorkItemType] IN GROUP 'Microsoft.RequirementCategory' " +
         $"AND [System.State] = '{AzureDevOps.Wiql(Reglas.EstadoPbi)}' AND [System.Title] <> '{AzureDevOps.Wiql(Reglas.TituloPbiDaily)}'" +
         (Reglas.SoloPbiAsignadosAMi ? " AND [System.AssignedTo] = @Me" : string.Empty) + " ORDER BY [System.Id]"));
-    var omitidos = pbis.Where(p => !Reglas.TieneFormato(p.Titulo)).ToList();
-    foreach (var pbi in pbis.Where(p => Reglas.TieneFormato(p.Titulo)))
+    if (pbis.Count == 0)
     {
-        Planear(devops, pbi, await devops.HijosAsync(pbi.Id), fechas, f => Reglas.TituloTareaPbi(f, pbi.Titulo), aCrear, yaExisten);
+        Aviso($"No tiene PBI en {Reglas.EstadoPbi} en {sprint.Nombre}.");
+    }
+    foreach (var pbi in pbis)
+    {
+        Planear(devops, pbi, await devops.HijosAsync(pbi.Id), fechas, f => Reglas.TituloTareaPbi(f, pbi.Titulo), false, aCrear, yaExisten);
     }
 
-    // Revisión antes de crear.
     Console.WriteLine();
     if (yaExisten.Count > 0)
     {
         Console.WriteLine($"Ya existen (no se crean): {yaExisten.Count}");
         yaExisten.ForEach(y => Console.WriteLine($"  = {y}"));
     }
-    if (omitidos.Count > 0)
-    {
-        Console.WriteLine($"PBI en {Reglas.EstadoPbi} sin el formato \"{Reglas.PrefijoPbi}\" (no se les crea nada): {omitidos.Count}");
-        omitidos.ForEach(o => Console.WriteLine($"  - {o.Id} {o.Titulo}"));
-    }
     if (aCrear.Count == 0)
     {
         Console.WriteLine("No hay nada que crear: todo está al día.");
         return;
     }
-    Console.WriteLine($"Se van a crear {aCrear.Count} tarea(s), asignadas a {devops.MiNombre}:");
-    foreach (var (_, padre, titulo) in aCrear)
+
+    // Horas: el Daily lleva las suyas y las tareas de PBI de cada día se reparten lo que queda de la jornada.
+    var campo = await devops.CampoHorasAsync(Reglas.CampoHoras);
+    if (campo is null)
     {
-        Console.WriteLine($"  + en {padre.Id,-8} {titulo}");
+        Aviso("El tipo Task de este proyecto no tiene campo de horas (Completed Work ni Remaining Work): se crean sin horas.");
+    }
+    else
+    {
+        foreach (var dia in aCrear.GroupBy(t => t.Fecha))
+        {
+            RepartirHoras(dia.Key, dia.Where(t => t.EsDaily).ToList(), dia.Where(t => !t.EsDaily).ToList(),
+                yaExisten.Any(y => y.Contains(Texto(dia.Key), StringComparison.Ordinal)));
+        }
+    }
+
+    // Revisión antes de crear.
+    Console.WriteLine();
+    Console.WriteLine($"Se van a crear {aCrear.Count} tarea(s), asignadas a {devops.MiNombre}" + (campo is null ? ":" : $", con las horas en {campo.Value.Nombre}:"));
+    foreach (var dia in aCrear.GroupBy(t => t.Fecha))
+    {
+        foreach (var t in dia)
+        {
+            Console.WriteLine($"  + en {t.Padre.Id,-8} {(campo is null ? string.Empty : Horas(t.Horas) + " h  ")}{t.Titulo}");
+        }
+        if (campo is not null)
+        {
+            Console.WriteLine($"    {Texto(dia.Key)}: {Horas(dia.Sum(t => t.Horas))} h nuevas");
+        }
     }
     if (!Preguntar("¿Crear? (s/n)").Equals("s", StringComparison.OrdinalIgnoreCase))
     {
@@ -181,18 +203,18 @@ static async Task CrearIdsAsync(AzureDevOps devops)
     }
 
     var creados = new List<int>();
-    foreach (var (_, padre, titulo) in aCrear)
+    foreach (var t in aCrear)
     {
-        var id = await devops.CrearTareaAsync(padre, titulo);
+        var id = await devops.CrearTareaAsync(t.Padre, t.Titulo, t.Horas, campo?.Campo);
         creados.Add(id);
-        Console.WriteLine($"  ✓ {id} {titulo}");
+        Console.WriteLine($"  ✓ {id} {t.Titulo}");
     }
     Console.WriteLine($"Creados ({creados.Count}): {string.Join(", ", creados)}");
 }
 
 /// <summary>Para cada fecha: si el padre ya tiene una tarea suya con esa fecha, se anota como existente; si no, se planea.</summary>
 static void Planear(AzureDevOps devops, Elemento padre, List<Elemento> hijos, List<DateTime> fechas, Func<string, string> titulo,
-    List<(DateTime, Elemento, string)> aCrear, List<string> yaExisten)
+    bool esDaily, List<Tarea> aCrear, List<string> yaExisten)
 {
     foreach (var fecha in fechas)
     {
@@ -205,10 +227,62 @@ static void Planear(AzureDevOps devops, Elemento padre, List<Elemento> hijos, Li
         }
         else
         {
-            aCrear.Add((fecha, padre, titulo(texto)));
+            aCrear.Add(new Tarea(fecha, padre, titulo(texto), esDaily));
         }
     }
 }
+
+/// <summary>
+/// Horas de un día. El Daily lleva Reglas.HorasDaily; las tareas de PBI se reparten el resto de Reglas.HorasDia:
+/// solas (en cuartos de hora) si son hasta Reglas.RepartoAutomaticoHasta, o preguntando una por una si son más o si
+/// ese día ya tenía tareas (para no pasarse de la jornada).
+/// </summary>
+static void RepartirHoras(DateTime fecha, List<Tarea> daily, List<Tarea> pbis, bool habiaTareas)
+{
+    daily.ForEach(t => t.Horas = Reglas.HorasDaily);
+    if (pbis.Count == 0)
+    {
+        return;
+    }
+    var disponible = Reglas.HorasDia - Reglas.HorasDaily;
+    if (pbis.Count <= Reglas.RepartoAutomaticoHasta && !habiaTareas)
+    {
+        // Partes iguales en cuartos de hora; el sobrante de redondear va a la primera.
+        var parte = Math.Floor(disponible / pbis.Count / Reglas.BloqueHoras) * Reglas.BloqueHoras;
+        pbis.ForEach(t => t.Horas = parte);
+        pbis[0].Horas += disponible - parte * pbis.Count;
+        return;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Horas del {Texto(fecha)}: Daily {Horas(Reglas.HorasDaily)} h; quedan {Horas(disponible)} h de {Horas(Reglas.HorasDia)} para {pbis.Count} tarea(s)." +
+        (habiaTareas ? " Ese día ya tenía tareas: reste las horas que ya registró." : string.Empty));
+    var usadas = 0m;
+    for (var i = 0; i < pbis.Count; i++)
+    {
+        var quedan = disponible - usadas;
+        var sugeridas = i == pbis.Count - 1 ? quedan : Math.Floor(quedan / (pbis.Count - i) / Reglas.BloqueHoras) * Reglas.BloqueHoras;
+        Console.WriteLine($"  {pbis[i].Titulo}");
+        while (true)
+        {
+            var texto = Preguntar($"    Horas [{Horas(sugeridas)}] (quedan {Horas(quedan)})");
+            var horas = texto.Length == 0 ? sugeridas : LeerHoras(texto);
+            if (horas is >= 0 && horas <= quedan)
+            {
+                pbis[i].Horas = horas.Value;
+                usadas += horas.Value;
+                Console.WriteLine($"    Llevan {Horas(Reglas.HorasDaily + usadas)} de {Horas(Reglas.HorasDia)} h");
+                break;
+            }
+            Console.WriteLine($"    Escriba un número entre 0 y {Horas(quedan)} (por ejemplo 2,5).");
+        }
+    }
+}
+
+static decimal? LeerHoras(string texto) =>
+    decimal.TryParse(texto.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var horas) ? horas : null;
+
+static string Horas(decimal horas) => horas.ToString("0.00", CultureInfo.GetCultureInfo("es-CR"));
 
 // ------------------------------------------------------------------------------------------------------ datos
 
@@ -279,4 +353,14 @@ static void Error(string texto)
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine(texto);
     Console.ResetColor();
+}
+
+/// <summary>Una tarea por crear: el día, el padre, el título, si es la del Daily y sus horas.</summary>
+sealed class Tarea(DateTime fecha, Elemento padre, string titulo, bool esDaily)
+{
+    public DateTime Fecha { get; } = fecha;
+    public Elemento Padre { get; } = padre;
+    public string Titulo { get; } = titulo;
+    public bool EsDaily { get; } = esDaily;
+    public decimal Horas { get; set; }
 }
