@@ -1,3 +1,4 @@
+@page "/"
 @inject Sesion Sesion
 @inject IJSRuntime JS
 
@@ -26,7 +27,7 @@
 
     @if (devops is null)
     {
-        <p class="tenue">@(error is null ? "Iniciando sesión con Microsoft… (la primera vez se abre el navegador)" : string.Empty)</p>
+        <p class="tenue">@(error is null ? "Iniciando sesión con Microsoft… (la primera vez se abre otra pestaña para entrar)" : string.Empty)</p>
     }
     else if (!Sesion.Listo)
     {
@@ -312,14 +313,13 @@
 
     /// <summary>
     /// Daily 0,25 y el resto de 7,50 en partes iguales (cuartos de hora; el sobrante a la primera) entre las tareas de
-    /// PBI marcadas. Si el día ya tenía tareas, solo reparte lo que falta suponiendo que esas no tienen horas: ajústelo.
+    /// PBI marcadas. Las horas se pueden cambiar después: el total es una guía, no una obligación.
     /// </summary>
     private void Repartir()
     {
         var crear = PorCrear;
-        var daily = crear.Where(f => f.EsDaily).ToList();
         var pbis = crear.Where(f => !f.EsDaily).ToList();
-        daily.ForEach(f => f.Horas = Reglas.HorasDaily);
+        crear.Where(f => f.EsDaily).ToList().ForEach(f => f.Horas = Reglas.HorasDaily);
         filas.Where(f => !f.Crear).ToList().ForEach(f => f.Horas = 0);
         if (pbis.Count == 0)
         {

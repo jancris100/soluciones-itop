@@ -1,23 +1,26 @@
 # devops-diario
 
-Ventana (y consola) para el día a día en Azure DevOps. Entra con su cuenta de Microsoft Entra ID; no usa PAT.
+Web app local (y consola) para el día a día en Azure DevOps. Entra con su cuenta de Microsoft Entra ID; no usa PAT.
 
-## Ventana (recomendada)
+## Web app (recomendada)
 
 ```powershell
 cd devops-diario
-.\instalar-ventana.ps1
+.\instalar.ps1
 ```
 
-Crea `devops-diario.exe` en `%LOCALAPPDATA%\devops-diario\app` y el acceso directo **DevOps diario** en el escritorio.
-Después de un `git pull`, córralo otra vez para actualizarla.
+- Queda instalada en esta misma carpeta (`devops-diario\app`, no se sube a git) y crea el acceso directo **DevOps diario** en el escritorio.
+- El acceso directo abre el navegador en `http://localhost:5199`. Solo funciona en su equipo.
+- La ventanita minimizada es el servidor: ciérrela para detenerlo.
+- Después de un `git pull`, corra `.\instalar.ps1` otra vez para actualizarla.
 
-- **Crear tareas:** escoge la fecha (o Ayer / Hoy) y muestra el Daily y sus PBI en Committed.
-  - Cada tarea es fecha + prefijo + título del PBI. El prefijo se edita en cada fila y la ventana recuerda el último por PBI.
-  - Las horas se reparten solas (Daily 0,25 y el resto de 7,50) y se pueden cambiar; el total de 7,50 es una guía, no obligatorio.
-  - Si falta un PBI, se crea ahí mismo (en Committed, en el sprint y asignado a usted) y queda en la lista.
-  - Lo que ya existe para esa fecha aparece en gris y no se vuelve a crear.
-- **Mis IDs:** los work items con la fecha en el título y un botón para copiar los IDs.
+**Crear tareas:** escoge la fecha (o Ayer / Hoy) y muestra el Daily y sus PBI en Committed.
+- Cada tarea es fecha + prefijo + título del PBI. El prefijo se edita en cada fila y la app recuerda el último por PBI.
+- Las horas se reparten solas (Daily 0,25 y el resto de 7,50) y se pueden cambiar; el total de 7,50 es una guía, no obligatorio.
+- Si falta un PBI, se crea ahí mismo (en Committed, en el sprint y asignado a usted) y queda en la lista.
+- Lo que ya existe para esa fecha aparece en gris y no se vuelve a crear.
+
+**Mis IDs:** los work items con la fecha en el título y un botón para copiar los IDs.
 
 ## Consola
 

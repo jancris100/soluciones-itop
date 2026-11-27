@@ -8,11 +8,11 @@
     <RootNamespace>DevOpsDiario</RootNamespace>
   </PropertyGroup>
 
-  <!-- La ventana (Ventana/) es otro proyecto: comparte AzureDevOps.cs, Reglas.cs y Configuracion.cs. -->
+  <!-- La web app (Web/) es otro proyecto: comparte AzureDevOps.cs, Reglas.cs y Configuracion.cs. -->
   <ItemGroup>
-    <Compile Remove="Ventana/**" />
-    <Content Remove="Ventana/**" />
-    <None Remove="Ventana/**" />
+    <Compile Remove="Web/**" />
+    <Content Remove="Web/**" />
+    <None Remove="Web/**" />
   </ItemGroup>
 
   <ItemGroup>

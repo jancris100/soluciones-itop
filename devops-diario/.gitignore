@@ -2,3 +2,5 @@ bin/
 obj/
 # Lleva el tenant: es propio de cada quien (se copia de launchSettings.example.json).
 Properties/launchSettings.json
+# Instalación local de la web app (instalar.ps1).
+app/
