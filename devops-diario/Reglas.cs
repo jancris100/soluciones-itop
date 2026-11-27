@@ -76,7 +76,57 @@ public static class Reglas
         string.Join(' ', FormatoTareaPbi.Replace("{fecha}", fecha).Replace("{prefijo}", Prefijo).Replace("{pbi}", tituloPbi.Trim())
             .Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
-    /// <summary>Valor de la variable, o null si no está o está vacía.</summary>
-    private static string? Variable(string nombre) =>
-        Environment.GetEnvironmentVariable(nombre) is { Length: > 0 } valor && !valor.StartsWith('<') ? valor.Trim() : null;
+    /// <summary>
+    /// Valor de la variable, o null si no está o está vacía. Primero la variable de entorno (global de Windows, o la que
+    /// pone "dotnet run" desde launchSettings.json); si no, la de Properties\launchSettings.json leída directo, porque la
+    /// web app instalada no se abre con "dotnet run".
+    /// </summary>
+    private static string? Variable(string nombre)
+    {
+        var valor = Environment.GetEnvironmentVariable(nombre);
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            ArchivoLaunchSettings.Value.TryGetValue(nombre, out valor);
+        }
+        return valor is { Length: > 0 } && !valor.StartsWith('<') ? valor.Trim() : null;
+    }
+
+    /// <summary>
+    /// Variables de Properties\launchSettings.json del proyecto devops-diario: se busca junto a la app instalada
+    /// (devops-diario\app → devops-diario\Properties) y en la carpeta actual. Vacío si no está o no se puede leer.
+    /// </summary>
+    private static readonly Lazy<Dictionary<string, string>> ArchivoLaunchSettings = new(() =>
+    {
+        var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        string[] candidatos =
+        [
+            Path.Combine(AppContext.BaseDirectory, "..", "Properties", "launchSettings.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "Properties", "launchSettings.json"),
+        ];
+        var archivo = candidatos.Select(Path.GetFullPath).FirstOrDefault(File.Exists);
+        if (archivo is null)
+        {
+            return variables;
+        }
+        try
+        {
+            using var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(archivo),
+                new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            foreach (var perfil in json.RootElement.GetProperty("profiles").EnumerateObject())
+            {
+                if (perfil.Value.TryGetProperty("environmentVariables", out var env))
+                {
+                    foreach (var v in env.EnumerateObject())
+                    {
+                        variables.TryAdd(v.Name, v.Value.GetString() ?? string.Empty);
+                    }
+                }
+            }
+        }
+        catch (Exception e) when (e is System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException or IOException)
+        {
+            // Un launchSettings.json mal escrito no debe tumbar la app: se sigue como si no estuviera.
+        }
+        return variables;
+    });
 }
